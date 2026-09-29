@@ -1,0 +1,19 @@
+{
+  "env": {
+    "CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS": "1"
+  },
+  "teammateMode": "iterm2",
+  "hooks": {
+    "SessionEnd": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "case \"$(ps -o args= -p $PPID 2>/dev/null)\" in *--team-name*) ;; *) exit 0 ;; esac; [ -n \"$ITERM_SESSION_ID\" ] || exit 0; it2bin=$(command -v it2 || echo /Applications/iTerm.app/Contents/Resources/utilities/it2); [ -x \"$it2bin\" ] || exit 0; \"$it2bin\" session close --session \"${ITERM_SESSION_ID#*:}\" --force >/dev/null 2>&1 || true",
+            "timeout": 10
+          }
+        ]
+      }
+    ]
+  }
+}
