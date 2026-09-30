@@ -1,90 +1,106 @@
 # arc42_agents
 
 A toolkit for coordinating Claude agents that each hold their **own conversation with the user**,
-in their own terminal pane. The current contents are a minimal, generic MVP of that mechanism;
-arc42 content is not here yet.
+reached from the same terminal. An orchestrator drives an arc42 architecture document to
+completion, one section worker at a time. Today only section 1 has a worker.
 
 ## The mechanism
 
-It is Claude Code's built-in **Agent Teams**, not custom machinery. `.claude/settings.json` turns
-it on:
+It is Claude Code's built-in **Agent Teams**, not custom machinery. `.claude/settings.json`:
 
 ```json
 {
   "env": { "CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS": "1" },
-  "teammateMode": "iterm2"
+  "teammateMode": "in-process"
 }
 ```
 
-A worker is a **teammate** — a full, independent Claude Code session in its own iTerm2 pane,
+A worker is a **teammate** — an interactive Claude session running inside the lead's process,
 spawned by calling the Agent tool **with a `name`**. The `name` is what makes it a teammate rather
-than an in-process subagent. The user talks to each teammate directly in its pane; teammates
-report a one-line status back to the lead with `SendMessage`.
+than a silent in-process subagent. The user reaches a teammate from the lead's terminal: ↓ at the
+empty prompt opens the agent panel, ↑/↓ selects, Enter opens the teammate's transcript and sends
+typed text to it, Esc returns to the lead. Built-in `/` commands always run in the lead.
+Teammates report a one-line status back to the lead with `SendMessage`.
 
-Start the orchestrator with `claude --agent orchestrator`. It learns its own session name from
-`ListAgents` (whose first line tells a session what it is called) and writes that name into each
-teammate's prompt as the reply address.
+Start the orchestrator with `claude --agent orchestrator` from this directory. Teammates reach it
+with `SendMessage(to: "main", …)`.
 
-## Lifecycle — the non-obvious part
+## Lifecycle
 
-A teammate **does not exit when it finishes its task.** It goes idle and waits, because it is an
-interactive session the user may still be talking to. Ending one is explicit:
+A teammate **does not exit when it finishes its task.** It goes idle and waits. Ending one is
+explicit and goes through the lead; the orchestrator does it as soon as a worker reports `done:`
+and leaves a `blocked:` worker up for the user:
 
 ```
 SendMessage(to: "<teammate>", message: {"type": "shutdown_request", "reason": "..."})
 ```
 
-The teammate approves, its session ends, and the `SessionEnd` hook in `.claude/settings.json`
-closes its pane (~2s, verified). Claude Code itself does **not** close teammate panes — without
-that hook they pile up as dead `-zsh` panes.
-
-The hook must only ever fire for teammates. It identifies one by checking its own owning process
-for `--team-name`:
-
-| session | process args | hook |
-|---|---|---|
-| lead / orchestrator | `claude --resume …`, `claude --agent orchestrator` | exits 0, closes nothing |
-| teammate | `claude --agent-id … --agent-name … --team-name … --agent-type …` | closes its own pane |
-
-It closes only `${ITERM_SESSION_ID#*:}` — its own pane id, taken from its own environment. It never
-searches for a pane.
-
-**`CLAUDE_CODE_CHILD_SESSION=1` is NOT a teammate marker** — it is set in the lead session too.
-Keying the hook on it closes the user's own pane. Measured, not assumed.
+The teammate approves and its session ends. Per the docs, messaging a stopped in-process teammate
+brings it back with its conversation restored.
 
 ## Layout
 
-- `.claude/settings.json` — enables Agent Teams, iTerm2 panes, and the pane-closing `SessionEnd` hook.
-- `.claude/agents/orchestrator.md` — spawns teammates, yields, collects statuses, tears down.
-- `.claude/agents/demo-worker.md` — throwaway teammate that proves the mechanism end to end.
+- `.claude/settings.json` — enables Agent Teams, in-process.
+- `.claude/agents/orchestrator.md` — drives arc42 completion: status → spawn section worker → yield → shutdown.
+- `.claude/agents/introduction-and-goals.md` — section 1 worker; interviews the user, writes `docs/introduction_and_goals.md`.
+- `.claude/agents/demo-worker.md` — throwaway teammate that proves the user can talk to a teammate.
+
+Convention: worker agent name = arc42 section slug; output file = `docs/<slug, - replaced by _>.md`.
 
 ## Things already learned the hard way — do not rediscover them
 
-- **Teammates cannot spawn teammates, but they CAN spawn in-process subagents.** Verified at the
-  tool layer. A teammate does have the Agent tool; an Agent call *with* a `name` is refused —
-  "Teammates cannot spawn other teammates — the team roster is flat. To spawn a subagent instead,
-  omit the `name` parameter." — while an Agent call *without* a `name` succeeds and runs an
-  ordinary background subagent with no pane and no TTY.
-  So a worker can delegate silent background work, but it can never create another pane the user
-  can talk to. Any hierarchy of *user-facing* agents must be flat: one lead, N teammates. This is
-  the exact reason the earlier master → section → worker design in this repo failed.
-- **A plain Agent call with no `name` is an in-process subagent**: no pane, no TTY, no
+- **Teammates cannot spawn teammates.** Verified at the tool layer: an Agent call *with* a `name`
+  from a teammate is refused — "Teammates cannot spawn other teammates — the team roster is flat. To
+  spawn a subagent instead, omit the `name` parameter." Any hierarchy of user-facing agents must be
+  flat: one lead, N teammates. This is what sank the earlier master → section → worker design in
+  this repo. (In iTerm2 mode a teammate could still run a background subagent without a `name`; the
+  docs say in-process teammates cannot.)
+- **A plain Agent call with no `name` is a silent subagent**: no conversation the user can join, no
   `AskUserQuestion`, and it inherits no `CLAUDE.md` layers — with nothing to signal the loss.
 - **Agent, skill and settings changes load at session start.** A teammate type you just wrote is
-  not spawnable until you restart; enabling Agent Teams likewise does nothing until restart, even
-  though the env var shows up in subprocesses immediately.
+  not spawnable until you restart; enabling Agent Teams or changing `teammateMode` likewise does
+  nothing until restart, even though the env var shows up in subprocesses immediately.
 - **Teammates launch with `--permission-mode auto`.**
-- **iTerm2's Python API is unavailable here** (no `iterm2env`, `import iterm2` fails) — irrelevant.
-  `it2` is a native binary (`/opt/homebrew/bin/it2` → the iTerm.app bundle) that speaks the iTerm2
-  API with no Python, and `EnableAPIServer` is `1`. `it2 session list|read|close|split|send|focus`
-  all work. `teammateMode: "iterm2"` needs `it2`, not the Python module.
-- **`it2 session read` shows a pane's live screen, not its scrollback.** Once a session exits, its
-  transcript is gone from the pane — do not plan to recover a teammate's dialogue that way.
-- **A session learns its own name from `ListAgents`** — first line, "This session is <name>"; self
-  is excluded from the peer list.
+- **A teammate's permission prompts and `AskUserQuestion` land in the lead session, never in the
+  teammate's own view.** Measured in iTerm2 mode: the full question UI rendered in the lead's pane
+  ("Waiting for team lead approval … Permission request sent to team … leader") while the teammate
+  hung and later saw only the answers; the docs state the same for permission prompts in every mode.
+  Allow-listing `AskUserQuestion` in `permissions.allow` changes nothing (tested 2026-09-30). So
+  workers do not get the tool: they ask in plain text and wait for the typed reply.
+- **In-process teammates address the lead as `main`, and have no `ListAgents`.** Measured
+  2026-09-30: a worker given the lead's outside session name (the `ListAgents` "This session is
+  <name>" name) had that address rejected; `main` worked; `ListAgents` was unavailable inside the
+  teammate. (In iTerm2 mode teammates were separate sessions and used the lead's session name.)
+- **A teammate that exits behind the lead's back leaves a ghost in the roster.** Measured in iTerm2
+  mode: `/exit`, Ctrl-D or Ctrl-C in a teammate ended it, nothing told the lead, the row stayed until
+  the lead restarted, and `SendMessage` to the ghost returned `success: true` with no reply ever.
+  The roster only clears through the `shutdown_request` handshake. `ListAgents` is not a liveness
+  check. In-process mode has no separate process to kill and revives a stopped teammate on message,
+  so this should matter less there — unverified.
+- **A session with a team cannot be `--resume`d** (documented limitation).
 - **There is no `claude --cwd`.** The launching shell must `cd`. `--add-dir` grants tool access to
   other directories but does not change the working directory — and `CLAUDE.md` auto-discovery
   follows the working directory's ancestors and nothing else.
+
+## If you ever go back to iTerm2 panes (`teammateMode: "iterm2"`)
+
+Worked as of commit 176e293; dropped because one terminal is wanted. Everything below was measured.
+
+- Claude Code does **not** close a teammate's pane when it ends; without help they pile up as dead
+  `-zsh` panes. Recipe: a `SessionEnd` hook that checks its own parent process args for
+  `--team-name` (teammates run as `claude --agent-id … --agent-name … --team-name … --agent-type …`;
+  the lead runs as `claude --agent orchestrator` or `claude --resume …`) and closes only its own
+  pane: `it2 session close --session "${ITERM_SESSION_ID#*:}" --force`. Never search for a pane.
+- **`CLAUDE_CODE_CHILD_SESSION=1` is NOT a teammate marker** — it is set in the lead too; keying the
+  hook on it closes the user's own pane.
+- **`it2` is a native binary** (`/opt/homebrew/bin/it2` → the iTerm.app bundle); iTerm2's Python API
+  (`import iterm2`) is unavailable and not needed. `it2 session list|read|close|split|send|focus`
+  work; `EnableAPIServer` is `1`.
+- **`it2 session read` shows a pane's live screen, not its scrollback**, and its output contains NUL
+  bytes (`tr -d '\0'` before grep). A teammate's dialogue cannot be recovered that way after exit.
+- **Liveness**: `ps -eo args | grep -- '--team-name'` (teammate processes) and `it2 session list`
+  (panes), not `ListAgents`.
+- `it2 session send` puts text in the Claude Code prompt but a separate `$'\r'` is needed to submit.
 
 ## Open question before arc42 is built on this
 
