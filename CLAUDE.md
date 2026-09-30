@@ -2,7 +2,8 @@
 
 A toolkit for coordinating Claude agents that each hold their **own conversation with the user**,
 reached from the same terminal. An orchestrator drives an arc42 architecture document to
-completion, one section worker at a time. Today only section 1 has a worker.
+completion, one section worker at a time. One generic worker type serves all twelve sections; each
+note it writes ends with a Resources list of linked documentation.
 
 ## The mechanism
 
@@ -42,10 +43,17 @@ brings it back with its conversation restored.
 
 - `.claude/settings.json` — enables Agent Teams, in-process.
 - `.claude/agents/orchestrator.md` — drives arc42 completion: status → spawn section worker → yield → shutdown.
-- `.claude/agents/introduction-and-goals.md` — section 1 worker; interviews the user, writes `docs/introduction_and_goals.md`.
+- `.claude/agents/section-worker.md` — the one worker for all 12 sections; told the section by the orchestrator, interviews the user, gathers linked resources (web and internal docs), writes the section note.
 - `.claude/agents/demo-worker.md` — throwaway teammate that proves the user can talk to a teammate.
+- `docs/resources.md` — shared index of linked documentation; pre-fill it with known sources, workers read it first and append what they use.
+- `docs/arc42_sections.md` — the twelve section briefs (Cover / Altitude) and the skill map (topic skill + subtopic skills per section); the worker reads its own section, the orchestrator reads the `Skills:` line at spawn. Not a section.
+- `.claude/skills/<name>/SKILL.md` — topic and subtopic skills (none yet); the names come from the skill map.
 
-Convention: worker agent name = arc42 section slug; output file = `docs/<slug, - replaced by _>.md`.
+Convention: one worker type, `section-worker`; teammate name = `s<N>-<slug>`; output file =
+`docs/<slug, - replaced by _>.md`, ending in a `## Resources` list (title + link + one-line
+description, referenced inline by title where the text relies on it). `.claude/settings.json`
+allow-lists `WebSearch` and `WebFetch` so the worker's link checks do not stall on prompts only
+the lead can see.
 
 ## Things already learned the hard way — do not rediscover them
 
@@ -109,3 +117,10 @@ layer a personality onto it. Teammates are spawned by the lead, and it is **not 
 teammate can be given its own working directory** — `isolation: "worktree"` creates a git worktree,
 which is not the same thing. Settle this before building the arc42 hierarchy; if teammates cannot
 be rooted per-directory, the layering needs a different delivery mechanism.
+
+As of 2026-09-30 the per-section personality is delivered by skills: a topic skill per section
+(voice, interview style, depth) and subtopic skills per subsection (what it contains and how it
+looks), named per section in `docs/arc42_sections.md` and passed by the orchestrator in the spawn
+prompt. The brief in that file is the fallback when a skill is missing. Whether an in-process
+teammate sees project skills and can invoke `Skill` is unverified — test it with the first skill.
+Per-directory layering is only needed again if a section ever outgrows a skill.
