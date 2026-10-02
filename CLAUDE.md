@@ -47,7 +47,10 @@ brings it back with its conversation restored.
 - `.claude/agents/demo-worker.md` — throwaway teammate that proves the user can talk to a teammate.
 - `docs/resources.md` — shared index of linked documentation; pre-fill it with known sources, workers read it first and append what they use.
 - `docs/arc42_sections.md` — the twelve section briefs (Cover / Altitude) and the skill map (topic skill + subtopic skills per section); the worker reads its own section, the orchestrator reads the `Skills:` line at spawn. Not a section.
-- `.claude/skills/<name>/SKILL.md` — topic and subtopic skills (none yet); the names come from the skill map.
+- `.claude/skills/<name>/SKILL.md` — topic and subtopic skills; the names come from the skill map.
+  Sections 1 and 2 have their full sets (`introduction-and-goals`, `requirements-overview`,
+  `quality-goals`, `stakeholders`; `constraints`, `technical-constraints`,
+  `organizational-constraints`, `conventions`). Sections 3–12 fall back to the brief until theirs exist.
 
 Convention: one worker type, `section-worker`; teammate name = `s<N>-<slug>`; output file =
 `docs/<slug, - replaced by _>.md`, ending in a `## Resources` list (title + link + one-line
