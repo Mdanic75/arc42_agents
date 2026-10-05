@@ -4,13 +4,17 @@ Read by `section-worker` before it interviews: find your section, cover what its
 in order, and stay at its *Altitude* — what the note must not descend into. This file is not an
 arc42 section.
 
-Every note: H1 `# <N>. <Section>`, subsections `## <N>.1 …`, `## <N>.2 …`.
+Every note: H1 `# <N>. <Section>`, subsections `## <N>.1 …`, `## <N>.2 …`. Pages outside arc42
+(at the end of this file) are unnumbered: H1 is the page title, teammate name is the slug.
 
 Each brief ends with a `Skills:` line — its topic skill and subtopic skills, files at
 `.claude/skills/<name>/SKILL.md`. The orchestrator passes these names to the worker; the worker
 invokes the topic skill before the interview and each subtopic skill when it reaches that
 subsection. A skill wins over the brief; the brief is the fallback when a skill is missing. Add a
 name here to have the orchestrator pass it.
+
+The `adr` skill is not listed per section: every worker invokes it when a decision surfaces and
+records the decision in `docs/adr/` (index `docs/adr/README.md`).
 
 **1 — Introduction and Goals.** Cover: 1.1 Requirements overview — what the system does, for
 whom, the handful of features without which it is pointless, what drove someone to build it; one
@@ -35,7 +39,7 @@ Skills: topic `constraints`; subtopics `technical-constraints`, `organizational-
 **3 — Context and Scope.** Cover: 3.1 Business context — users and neighbouring systems, and
 what data crosses each boundary. 3.2 Technical context — channels and protocols, and which
 business input or output rides on which channel. Altitude: the boundary and its neighbours.
-Nothing about the inside.
+Nothing about the inside. If `docs/c4.md` exists, link its Level 1 by title instead of redrawing.
 
 Skills: topic `context-and-scope`; subtopics `business-context`, `technical-context`.
 
@@ -48,7 +52,8 @@ Skills: topic `solution-strategy`; no subtopic skills.
 
 **5 — Building Block View.** Cover: level 1, a whitebox of the whole system — its blackboxes,
 each with name, responsibility and interfaces. Deeper levels only where the user wants them.
-Altitude: static structure only. Behaviour belongs to 6, infrastructure to 7.
+Altitude: static structure only. Behaviour belongs to 6, infrastructure to 7. If `docs/c4.md`
+exists, its Levels 2–3 are the whitebox: link, do not redraw.
 
 Skills: topic `building-block-view`; subtopics `whitebox-overall-system`, `building-block-level-2`, `building-block-level-3`.
 
@@ -71,7 +76,8 @@ Altitude: each concept short, with a link to where it is elaborated. No per-comp
 Skills: topic `crosscutting-concepts`; no subtopic skills (add per-concept skills here if wanted).
 
 **9 — Architecture Decisions.** Cover: one entry per decision — context, decision,
-consequences. Altitude: link existing ADR files rather than copying them.
+consequences. Altitude: link the records in `docs/adr/` (index `adr/README.md`) rather than
+copying them; a decision named here that has no record gets one through the `adr` skill.
 
 Skills: topic `architecture-decisions`; no subtopic skills.
 
@@ -91,9 +97,32 @@ Altitude: definitions of one or two sentences. No essays.
 
 Skills: topic `glossary`; no subtopic skills.
 
+## Pages outside arc42
+
+Not sections. No number: H1 is the page title; parts are `## Level 1 …`, `## Level 2 …`,
+`## Level 3 …`. Teammate name = the slug.
+
+**c4 — C4 model.** Output `docs/c4.md`, teammate `c4`. Cover: Level 1 System context — the
+system as one box, the roles that use it and the software systems it talks to, each line
+labelled with what flows; a Mermaid `C4Context` block and a table. Level 2 Containers — the
+separately runnable or deployable units inside it (apps, services, jobs, databases, queues,
+stores) with technology, responsibility and how they talk; a `C4Container` block and a table
+with a Decided-in column. Level 3 Components — the inside of one or two containers the user
+picks: components, responsibility, dependencies; a `C4Component` block and a table per
+container. Every chosen technology or structure is a decision: recorded at once as an ADR in
+`docs/adr/` through the `adr` skill, linked from its table cell as `[ADR-0003](adr/0003-<slug>.md)`
+and listed under a closing `## Decisions` as `- [ADR-0003: <Title>](adr/0003-<slug>.md) — <one line>`.
+No `## Resources` and no `## Open questions` on this page: sources go to `docs/resources.md`;
+what cannot be settled is left off the page and named in the done line. Altitude: static
+structure. No runtime sequences (6), no deployment nodes (7), no code (Level 4 is not drawn),
+no quality goals (1.2, 10). Imposed technology is a constraint (2), not a decision.
+
+Skills: topic `c4`; subtopics `c4-context`, `c4-container`, `c4-component`.
+
 ## When an answer belongs elsewhere
 
 Do not write it down. Say in one line which section it belongs to and steer back: introduction
 (1), constraints (2), context and scope (3), solution strategy (4), building blocks (5), runtime
 (6), deployment (7), crosscutting concepts (8), decisions (9), quality requirements (10), risks
-(11), glossary (12).
+(11), glossary (12); a container, component or neighbouring system by name (C4 page); a choice
+between options (an ADR in `docs/adr/`, via the `adr` skill, linked from 9).

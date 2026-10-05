@@ -3,7 +3,9 @@
 A toolkit for coordinating Claude agents that each hold their **own conversation with the user**,
 reached from the same terminal. An orchestrator drives an arc42 architecture document to
 completion, one section worker at a time. One generic worker type serves all twelve sections; each
-note it writes ends with a Resources list of linked documentation.
+note it writes ends with a Resources list of linked documentation. Beside the arc42 sections it
+produces a C4 page (`docs/c4.md`, three levels) whose decisions are recorded as MADR files in
+`docs/adr/` the moment they surface.
 
 ## The mechanism
 
@@ -43,18 +45,23 @@ brings it back with its conversation restored.
 
 - `.claude/settings.json` — enables Agent Teams, in-process.
 - `.claude/agents/orchestrator.md` — drives arc42 completion: status → spawn section worker → yield → shutdown.
-- `.claude/agents/section-worker.md` — the one worker for all 12 sections; told the section by the orchestrator, interviews the user, gathers linked resources (web and internal docs), writes the section note.
+- `.claude/agents/section-worker.md` — the one worker for all 12 sections and the C4 page; told the section or page by the orchestrator, interviews the user, gathers linked resources (web and internal docs), writes the section note.
 - `.claude/agents/demo-worker.md` — throwaway teammate that proves the user can talk to a teammate.
 - `docs/resources.md` — shared index of linked documentation; pre-fill it with known sources, workers read it first and append what they use.
-- `docs/arc42_sections.md` — the twelve section briefs (Cover / Altitude) and the skill map (topic skill + subtopic skills per section); the worker reads its own section, the orchestrator reads the `Skills:` line at spawn. Not a section.
+- `docs/arc42_sections.md` — the twelve section briefs plus the C4 page brief under *Pages outside arc42* (Cover / Altitude) and the skill map (topic skill + subtopic skills per section); the worker reads its own section, the orchestrator reads the `Skills:` line at spawn. Not a section.
+- `docs/adr/` — architecture decision records, MADR 4.0, `NNNN-<slug>.md`, index `README.md`; written by any worker through the `adr` skill the moment a decision surfaces.
 - `.claude/skills/<name>/SKILL.md` — topic and subtopic skills; the names come from the skill map.
   Sections 1 and 2 have their full sets (`introduction-and-goals`, `requirements-overview`,
   `quality-goals`, `stakeholders`; `constraints`, `technical-constraints`,
   `organizational-constraints`, `conventions`). Sections 3–12 fall back to the brief until theirs exist.
+  The C4 page has `c4`, `c4-context`, `c4-container`, `c4-component`; `adr` is the decision skill
+  every worker may invoke, not listed per section.
 
-Convention: one worker type, `section-worker`; teammate name = `s<N>-<slug>`; output file =
-`docs/<slug, - replaced by _>.md`, ending in a `## Resources` list (title + link + one-line
-description, referenced inline by title where the text relies on it). `.claude/settings.json`
+Convention: one worker type, `section-worker`; teammate name = `s<N>-<slug>`, bare slug for pages
+outside arc42 (`c4`); output file = `docs/<slug, - replaced by _>.md`, ending in a `## Resources`
+list (title + link + one-line description, referenced inline by title where the text relies on
+it). The C4 page is the exception: it ends with `## Decisions` (ADR links), has no Resources or
+Open questions section, and its sources go to `docs/resources.md` only. `.claude/settings.json`
 allow-lists `WebSearch` and `WebFetch` so the worker's link checks do not stall on prompts only
 the lead can see.
 
@@ -125,5 +132,6 @@ As of 2026-09-30 the per-section personality is delivered by skills: a topic ski
 (voice, interview style, depth) and subtopic skills per subsection (what it contains and how it
 looks), named per section in `docs/arc42_sections.md` and passed by the orchestrator in the spawn
 prompt. The brief in that file is the fallback when a skill is missing. Whether an in-process
-teammate sees project skills and can invoke `Skill` is unverified — test it with the first skill.
+teammate sees project skills and can invoke `Skill` is unverified — test it with the first skill
+(the C4 page run is the planned test).
 Per-directory layering is only needed again if a section ever outgrows a skill.
