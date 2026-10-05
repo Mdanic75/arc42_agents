@@ -5,6 +5,9 @@ workers read this before they search, reuse what is here, and add what they find
 sources before running a section: internal wikis, ADR directories, runbooks, the official docs
 of your stack.
 
+This is the starter copy shipped with the `arc42` plugin. Copy it to `docs/resources.md` to
+pre-fill known sources; otherwise the first section worker creates that file with these headings.
+
 One entry per line: `- [Title](link) — what it is, and why a reader would open it`. Titles are a
 few words; links to files in this repository are relative to `docs/`.
 

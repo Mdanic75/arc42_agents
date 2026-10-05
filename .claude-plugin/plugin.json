@@ -1,0 +1,6 @@
+{
+  "name": "arc42",
+  "version": "0.1.0",
+  "description": "arc42 architecture document driven by an orchestrator and one interviewing section worker (Agent Teams): topic and subtopic skills per section, a C4 page, MADR ADRs.",
+  "author": { "name": "Daniel Babaian" }
+}

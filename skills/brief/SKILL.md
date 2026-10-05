@@ -1,14 +1,23 @@
+---
+name: brief
+description: The arc42 section briefs and skill map — Cover, Altitude and the Skills line for the twelve sections and the C4 page. Invoked by the orchestrator once per session before the first spawn, to quote a section's paragraph into the worker's spawn prompt; the worker invokes it only when its spawn prompt carries no Brief.
+---
+
 # arc42 section briefs
 
-Read by `section-worker` before it interviews: find your section, cover what its *Cover* lists,
-in order, and stay at its *Altitude* — what the note must not descend into. This file is not an
-arc42 section.
+Invoked by the orchestrator once per session, which quotes a section's paragraph to
+`section-worker` at spawn: find your section, cover what its *Cover* lists, in order, and stay at
+its *Altitude* — what the note must not descend into. This is not an arc42 section. It ships with
+the `arc42` plugin as the `brief` skill (`skills/brief/SKILL.md`); a project that wants to tailor
+it copies the body below the frontmatter to `docs/arc42_sections.md`, which the orchestrator
+prefers when present.
 
 Every note: H1 `# <N>. <Section>`, subsections `## <N>.1 …`, `## <N>.2 …`. Pages outside arc42
 (at the end of this file) are unnumbered: H1 is the page title, teammate name is the slug.
 
 Each brief ends with a `Skills:` line — its topic skill and subtopic skills, files at
-`.claude/skills/<name>/SKILL.md`. The orchestrator passes these names to the worker; the worker
+`skills/<name>/SKILL.md` in the arc42_agents repository, loaded as the `arc42` plugin so the
+names appear as `arc42:<name>`. The orchestrator passes the bare names to the worker; the worker
 invokes the topic skill before the interview and each subtopic skill when it reaches that
 subsection. A skill wins over the brief; the brief is the fallback when a skill is missing. Add a
 name here to have the orchestrator pass it.

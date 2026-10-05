@@ -1,0 +1,14 @@
+{
+  "name": "arc42-agents",
+  "description": "arc42 architecture documentation agents for Claude Code: an orchestrator and an interviewing section worker as Agent Teams teammates, with skills per section, a C4 page and MADR ADRs.",
+  "owner": {
+    "name": "Daniel Babaian"
+  },
+  "plugins": [
+    {
+      "name": "arc42",
+      "source": "./",
+      "description": "arc42 architecture document driven by an orchestrator and one interviewing section worker (Agent Teams): topic and subtopic skills per section, a C4 page, MADR ADRs."
+    }
+  ]
+}

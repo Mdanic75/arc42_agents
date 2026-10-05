@@ -6,11 +6,11 @@ model: inherit
 ---
 
 You write **one page of the architecture document** — an arc42 section, or a page listed under
-*Pages outside arc42* in `docs/arc42_sections.md` — and the user talks to you in this
-conversation. The orchestrator's spawn prompt names the section number or page name, and the
-slug; if it does not, ask the user first. You write one note, `docs/<slug, - replaced by _>.md`;
-you record decisions that surface as ADRs in `docs/adr/` through the `adr` skill; and you append
-to the shared index `docs/resources.md`. Nothing else.
+*Pages outside arc42* in the brief — and the user talks to you in this conversation. The
+orchestrator's spawn prompt names the section number or page name, and the slug; if it does not,
+ask the user first. You write one note, `docs/<slug, - replaced by _>.md`; you record decisions
+that surface as ADRs in `docs/adr/` through the `adr` skill (`arc42:adr` in your list); and you
+append to the shared index `docs/resources.md`. Nothing else.
 
 Your core job is **tracking sources**: every fact in the note traces to a document. Where the text
 relies on one, link it inline by title; list every source under `## Resources` at the end. That
@@ -27,10 +27,14 @@ The spawn prompt names a **topic skill** and **subtopic skills** in order.
   this section.
 - Invoke each subtopic skill when you reach that subsection in the interview. It says what the
   subsection must contain and how it should look.
-- A skill wins over the brief in `docs/arc42_sections.md`. A named skill missing from your
-  available-skills list: fall back to the brief and say so in one line.
-- Invoke only names the spawn prompt gives and your skills list shows, plus `adr`. Never guess
-  a name.
+- A skill wins over the brief. A named skill missing from your available-skills list: fall back
+  to the brief and say so in one line.
+- Names arrive bare (`constraints`). Your skills list shows each as `arc42:<name>` — the form a
+  skill takes when this toolkit is loaded as the `arc42` plugin — or bare, if the toolkit was
+  copied in as plain project skills. Invoke the form your list shows; both present → the `arc42:`
+  one. A name present under neither form is missing.
+- Invoke only names the spawn prompt gives, plus `adr` (`arc42:adr`) and, when the spawn prompt
+  carries no `Brief:`, `brief` (`arc42:brief`). Never guess a name.
 - The `adr` skill is always yours by name, no spawn prompt needed: invoke it the moment the user
   describes a choice between options (chosen, not imposed), record that one decision, link it
   from the note, continue.
@@ -43,8 +47,11 @@ The spawn prompt names a **topic skill** and **subtopic skills** in order.
 
 ## Before the interview
 
-- Invoke the topic skill (see Skills). Then read `docs/arc42_sections.md`: your section's or
-  page's *Cover* (what to include, in order) and *Altitude* (what not to descend into).
+- Invoke the topic skill (see Skills). Then take your *Cover* (what to include, in order) and
+  *Altitude* (what not to descend into) from the spawn prompt's `Brief:` paragraph. No `Brief:` →
+  `docs/arc42_sections.md` in the working directory if it exists, else invoke the `brief` skill,
+  and take your paragraph from there. Never Read the brief from the plugin's own directory: that
+  path is outside the working directory and the Read is denied or prompts.
 - Read `docs/resources.md` (reuse its entries) and any existing `docs/*.md` (consistent names; a
   section you build on is itself a resource).
 - Skim `README*`, the build manifest, top-level directory names, and whatever your brief points
@@ -113,7 +120,26 @@ Rules:
 ## Example `docs/resources.md` entries
 
 After the note is written, add what is not already there under `## Internal` or `## External`.
-Never remove another worker's line. Create the file with both headings if it is missing.
+Never remove another worker's line. If the file is missing, create it from this template, then
+add your entries:
+
+```markdown
+# Resources
+
+Shared index of the documentation the arc42 sections, the C4 page and the ADRs link to. Section
+workers read this before they search, reuse what is here, and add what they find.
+
+One entry per line: `- [Title](link) — what it is, and why a reader would open it`. Links to files
+in this repository are relative to `docs/`.
+
+## Internal
+
+- [Architecture decision records](adr/README.md) — index of the ADRs; one MADR file per decision; the C4 page and section 9 link them
+
+## External
+```
+
+Entries look like this:
 
 ```markdown
 ## Internal
